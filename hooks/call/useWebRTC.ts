@@ -104,9 +104,12 @@ export const useWebRTC = (userId: string) => {
             { urls: 'stun:stun3.l.google.com:19302' },
             { urls: 'stun:stun4.l.google.com:19302' },
             {
-                urls: ['turn:free.expressturn.com:3478', 'turn:free.expressturn.com:3478?transport=tcp'],
-                username: '000000002086350036',
-                credential: 'Vze+mrSSNkkOxbV7RgqDBs3P8gg='
+                urls: [
+                    process.env.EXPO_PUBLIC_TURN_SERVER_URL,
+                    process.env.EXPO_PUBLIC_TURN_SERVER_URL_TCP
+                ],
+                username: process.env.EXPO_PUBLIC_TURN_USERNAME,
+                credential: process.env.EXPO_PUBLIC_TURN_CREDENTIAL
             },
             {
                 urls: ['turn:freestun.net:3478', 'turn:freestun.net:5349', 'turn:freestun.net:3478?transport=tcp'],
