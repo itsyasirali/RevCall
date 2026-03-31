@@ -2,16 +2,12 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from '../service/axios';
 
-interface AuthContextType {
-    user: any;
-    loading: boolean;
-    setUser: React.Dispatch<React.SetStateAction<any>>;
-}
+import { AuthContextType, User } from '../types';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
     const checkAuth = useCallback(async () => {
@@ -20,7 +16,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const newUser = response.data;
 
             // Only update if data actually changed to avoid re-render storms
-            setUser((prevUser: any) => {
+            setUser((prevUser: User | null) => {
                 const isChanged = JSON.stringify(newUser) !== JSON.stringify(prevUser);
                 if (isChanged) {
                     return newUser;

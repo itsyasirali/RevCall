@@ -16,39 +16,7 @@ try {
     console.log('[CALL_CONTEXT] VolumeManager not found, ringer mode awareness disabled');
 }
 
-interface CallData {
-    from: string;
-    name: string;
-    offer: any;
-}
-
-interface ActiveCallData {
-    phoneNumber: string;
-    name: string;
-    isMinimized: boolean;
-    timer: number;
-    startTime?: Date;
-}
-
-interface CallContextType {
-    incomingCall: CallData | null;
-    isFullScreen: boolean; // For incoming call
-    isCallingFullScreen: boolean; // For active call
-    setIncomingCall: (call: CallData | null) => void;
-    setIsFullScreen: (isFull: boolean) => void;
-    setIsCallingFullScreen: (isFull: boolean) => void;
-    acceptCall: () => Promise<void>;
-    declineCall: () => Promise<void>;
-    activeCall: ActiveCallData | null;
-    setActiveCall: (call: ActiveCallData | null) => void;
-    minimizeCall: (phoneNumber: string, name: string, timer: number) => void;
-    restoreCall: () => void;
-    // Call controls
-    startOutgoingCall: (phoneNumber: string, name: string) => Promise<void>;
-    endCurrentCall: () => Promise<void>;
-    // WebRTC exposures
-    webrtc: any;
-}
+import { CallData, ActiveCallData, CallContextType } from '../types';
 
 const CallContext = createContext<CallContextType | undefined>(undefined);
 

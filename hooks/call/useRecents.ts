@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CallLogData } from '../../types';
 
 export const useRecents = () => {
-    const [history, setHistory] = useState<any[]>([]);
+    const [history, setHistory] = useState<CallLogData[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchHistory = async () => {

@@ -4,6 +4,7 @@ import { socketService, useSocket } from '../../service/socket';
 import { NativeModules, DeviceEventEmitter } from 'react-native';
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import InCallManager from 'react-native-incall-manager';
+import { PeerStatus } from '../../types';
 
 
 export const useWebRTC = (userId: string, remoteIceServers?: any[]) => {
@@ -11,7 +12,7 @@ export const useWebRTC = (userId: string, remoteIceServers?: any[]) => {
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
     const [connectionState, setConnectionState] = useState<string>('new');
-    const [peerStatus, setPeerStatus] = useState<'calling' | 'ringing' | 'connected' | 'idle'>('idle');
+    const [peerStatus, setPeerStatus] = useState<PeerStatus>('idle');
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isMuted, setIsMuted] = useState(false);
     const [isSpeaker, setIsSpeaker] = useState(false);
