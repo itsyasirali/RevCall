@@ -13,7 +13,7 @@ export const searchUsers = async (req: AuthRequest, res: Response) => {
                 { name: { $regex: query as string, $options: 'i' } },
                 { number: { $regex: query as string, $options: 'i' } }
             ],
-            _id: { $ne: req.user?.id } // Don't search for self
+            _id: { $ne: req.user?.id }
         }).select('name number _id');
 
         res.json(users);
