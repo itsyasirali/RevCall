@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import io, { Socket } from 'socket.io-client';
 import { BASE_URL } from './config';
 
+// Match the working IP used in service/axios.ts
 const SIGNAL_SERVER = BASE_URL;
 
 class SocketService {
