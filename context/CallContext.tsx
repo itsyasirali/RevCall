@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 import { Vibration, Platform, NativeModules } from 'react-native';
 import { Audio } from 'expo-av';
-import { socketService, useSocket } from '../service/socket';
+import { useSocket } from '../service/socket';
 import { useWebRTC } from '../hooks/call/useWebRTC';
 import { useAuth } from '../hooks/auth/useAuth';
 import axios from '../service/axios';
@@ -59,6 +59,7 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [isCallingFullScreen, setIsCallingFullScreen] = useState(false);
     const [activeCall, setActiveCall] = useState<ActiveCallData | null>(null);
     const [isIosMuted, setIsIosMuted] = useState(false);
+    const [iceServers, setIceServers] = useState<any[]>([]);
     const soundRef = useRef<Audio.Sound | null>(null);
     const isAcceptedRef = useRef(false);
     const startTimeRef = useRef<Date | null>(null);
@@ -79,8 +80,28 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const identifier = user?.number || user?._id || user?.id || '';
 
+    // Fetch dynamic ICE servers from backend to prioritize P2P paths
+    useEffect(() => {
+        const fetchIceServers = async () => {
+            if (!user) return;
+            try {
+                console.log('[CALL_CONTEXT] Fetching optimized ICE servers from backend...');
+                const res = await axios.get('/api/config/ice-servers');
+                if (res.data && res.data.iceServers) {
+                    console.log('[CALL_CONTEXT] ICE servers (STUN+TURN) loaded successfully');
+                    setIceServers(res.data.iceServers);
+                }
+            } catch (err) {
+                console.error('[CALL_CONTEXT] Failed to fetch optimized ICE servers:', err);
+                // Fallback will be handled inside useWebRTC hook
+            }
+        };
+
+        fetchIceServers();
+    }, [user]);
+
     // Use WebRTC hook at the component level to persist state
-    const webrtc = useWebRTC(identifier);
+    const webrtc = useWebRTC(identifier, iceServers);
 
     const logCall = async (data: {
         otherNumber: string,
@@ -93,7 +114,7 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }) => {
         try {
             console.log('[CALL_CONTEXT] Logging call locally:', data);
-            
+
             const newLog = {
                 _id: Date.now().toString(),
                 direction: data.direction,
@@ -107,10 +128,10 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             const existingHistoryJson = await AsyncStorage.getItem('CALL_HISTORY');
             let history = existingHistoryJson ? JSON.parse(existingHistoryJson) : [];
-            
+
             // Add to the beginning of the array
             history = [newLog, ...history].slice(0, 50); // Keep last 50 calls
-            
+
             await AsyncStorage.setItem('CALL_HISTORY', JSON.stringify(history));
             console.log('[CALL_CONTEXT] Call logged successfully to AsyncStorage');
         } catch (error) {

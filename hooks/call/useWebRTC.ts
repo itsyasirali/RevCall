@@ -6,7 +6,7 @@ import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import InCallManager from 'react-native-incall-manager';
 
 
-export const useWebRTC = (userId: string) => {
+export const useWebRTC = (userId: string, remoteIceServers?: any[]) => {
     // State
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
@@ -96,21 +96,13 @@ export const useWebRTC = (userId: string) => {
     }, [remoteStream]);
 
     const configuration: any = {
-        iceServers: [
+        iceServers: remoteIceServers && remoteIceServers.length > 0 ? remoteIceServers : [
             { urls: 'stun:stun.net' },
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
             { urls: 'stun:stun2.l.google.com:19302' },
             { urls: 'stun:stun3.l.google.com:19302' },
             { urls: 'stun:stun4.l.google.com:19302' },
-            {
-                urls: [
-                    process.env.EXPO_PUBLIC_TURN_SERVER_URL,
-                    process.env.EXPO_PUBLIC_TURN_SERVER_URL_TCP
-                ],
-                username: process.env.EXPO_PUBLIC_TURN_USERNAME,
-                credential: process.env.EXPO_PUBLIC_TURN_CREDENTIAL
-            },
             {
                 urls: ['turn:freestun.net:3478', 'turn:freestun.net:5349', 'turn:freestun.net:3478?transport=tcp'],
                 username: 'free',
