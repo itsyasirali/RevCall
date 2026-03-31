@@ -16,8 +16,7 @@
         "NSPhotoLibraryAddUsageDescription": "This app needs access to your photos to save invoice PDFs.",
         "NSMicrophoneUsageDescription": "This app needs access to your microphone for app-to-app calling.",
         "UIFileSharingEnabled": true,
-        "LSSupportsOpeningDocumentsInPlace": true,
-        "NSSpeechRecognitionUsageDescription": "Allow $(PRODUCT_NAME) to use speech recognition."
+        "LSSupportsOpeningDocumentsInPlace": true
       }
     },
     "android": {
@@ -73,8 +72,7 @@
           "isAccessMediaLocationEnabled": true,
           "audioPermission": "Allow $(PRODUCT_NAME) to access your audio."
         }
-      ],
-      "expo-speech-recognition"
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
