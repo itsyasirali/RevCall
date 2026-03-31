@@ -1,10 +1,9 @@
 import express from 'express';
-import { saveCall, getCallHistory } from '../controllers/callController';
+// import { saveCall, getCallHistory } from '../controllers/callController';
 import { auth } from '../middleware/auth';
 
 const router = express.Router();
 
-router.post('/log', auth, saveCall);
-router.get('/history', auth, getCallHistory);
+// Call logging and history are now handled locally on the frontend via AsyncStorage
 
 export default router;

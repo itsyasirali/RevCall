@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
-import axios from '../../service/axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const useRecents = () => {
     const [history, setHistory] = useState<any[]>([]);
@@ -8,8 +8,9 @@ export const useRecents = () => {
 
     const fetchHistory = async () => {
         try {
-            const res = await axios.get('/api/calls/history');
-            setHistory(Array.isArray(res.data) ? res.data : []);
+            const historyJson = await AsyncStorage.getItem('CALL_HISTORY');
+            const data = historyJson ? JSON.parse(historyJson) : [];
+            setHistory(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Fetch history error:', err);
         } finally {

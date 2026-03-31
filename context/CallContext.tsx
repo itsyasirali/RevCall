@@ -5,6 +5,7 @@ import { socketService, useSocket } from '../service/socket';
 import { useWebRTC } from '../hooks/call/useWebRTC';
 import { useAuth } from '../hooks/auth/useAuth';
 import axios from '../service/axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { format } from 'date-fns';
 
 // Safe import for VolumeManager
@@ -83,6 +84,7 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const logCall = async (data: {
         otherNumber: string,
+        otherName?: string,
         direction: 'incoming' | 'outgoing',
         status: 'missed' | 'completed' | 'busy' | 'declined',
         startTime: Date,
@@ -90,15 +92,29 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
         duration: number
     }) => {
         try {
-            console.log('[CALL_CONTEXT] Logging call:', data);
-            await axios.post('/api/calls/log', {
-                ...data,
-                receiverNumber: data.direction === 'outgoing' ? data.otherNumber : user?.number,
+            console.log('[CALL_CONTEXT] Logging call locally:', data);
+            
+            const newLog = {
+                _id: Date.now().toString(),
+                direction: data.direction,
+                status: data.status,
                 startTime: data.startTime.toISOString(),
-                endTime: data.endTime.toISOString()
-            });
+                endTime: data.endTime.toISOString(),
+                duration: data.duration,
+                caller: data.direction === 'outgoing' ? { name: user?.name, number: user?.number } : { name: data.otherName || 'Unknown', number: data.otherNumber },
+                receiver: data.direction === 'outgoing' ? { name: data.otherName || 'Unknown', number: data.otherNumber } : { name: user?.name, number: user?.number }
+            };
+
+            const existingHistoryJson = await AsyncStorage.getItem('CALL_HISTORY');
+            let history = existingHistoryJson ? JSON.parse(existingHistoryJson) : [];
+            
+            // Add to the beginning of the array
+            history = [newLog, ...history].slice(0, 50); // Keep last 50 calls
+            
+            await AsyncStorage.setItem('CALL_HISTORY', JSON.stringify(history));
+            console.log('[CALL_CONTEXT] Call logged successfully to AsyncStorage');
         } catch (error) {
-            console.error('[CALL_CONTEXT] Failed to log call:', error);
+            console.error('[CALL_CONTEXT] Failed to log call locally:', error);
         }
     };
 
@@ -249,6 +265,7 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const duration = Math.floor((new Date().getTime() - startTimeRef.current.getTime()) / 1000);
                 logCall({
                     otherNumber: activeCall.phoneNumber,
+                    otherName: activeCall.name,
                     direction: webrtc.peerStatus === 'connected' ? 'outgoing' : 'incoming',
                     status: 'completed',
                     startTime: startTimeRef.current,
@@ -325,6 +342,7 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Log declined call
         logCall({
             otherNumber: from,
+            otherName: incomingCall.name,
             direction: 'incoming',
             status: 'declined',
             startTime: now,
@@ -339,6 +357,7 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const duration = Math.floor((new Date().getTime() - startTimeRef.current.getTime()) / 1000);
                 logCall({
                     otherNumber: activeCall.phoneNumber,
+                    otherName: activeCall.name,
                     direction: 'outgoing',
                     status: 'completed',
                     startTime: startTimeRef.current,

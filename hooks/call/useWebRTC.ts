@@ -188,11 +188,6 @@ export const useWebRTC = (userId: string) => {
         const handleRinging = () => {
             console.log('[WEBRTC] Received ringing event from remote.');
             setPeerStatus('ringing');
-            // User requested to remove audio on caller side
-            // if (NativeModules.InCallManager) {
-            //     console.log('[WEBRTC] Starting ringback (dial tone) on caller device...');
-            //     InCallManager.startRingback('_BUNDLE_');
-            // }
         };
 
         const handleIceCandidate = async ({ candidate, from }: any) => {
