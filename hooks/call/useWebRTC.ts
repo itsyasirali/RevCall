@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { RTCPeerConnection, RTCIceCandidate, RTCSessionDescription, MediaStream, mediaDevices } from 'react-native-webrtc';
 import { socketService, useSocket } from '../../service/socket';
 import { NativeModules, DeviceEventEmitter } from 'react-native';
@@ -96,24 +96,23 @@ export const useWebRTC = (userId: string, remoteIceServers?: any[]) => {
         };
     }, [remoteStream]);
 
-    const configuration: any = {
+    const configuration: any = useMemo(() => ({
         iceServers: remoteIceServers && remoteIceServers.length > 0 ? remoteIceServers : [
-            { urls: 'stun:stun.net' },
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
             { urls: 'stun:stun2.l.google.com:19302' },
             { urls: 'stun:stun3.l.google.com:19302' },
             { urls: 'stun:stun4.l.google.com:19302' },
             {
-                urls: ['turn:freestun.net:3478', 'turn:freestun.net:5349', 'turn:freestun.net:3478?transport=tcp'],
-                username: 'free',
-                credential: 'free'
+                urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turn:openrelay.metered.ca:443?transport=tcp'],
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
             }
         ],
         iceTransportPolicy: 'all',
-        iceCandidatePoolSize: 0,
+        iceCandidatePoolSize: 10, // Pre-gathering 10 candidates reduces connection setup time
         sdpSemantics: 'unified-plan'
-    };
+    }), [remoteIceServers]);
 
     const cleanup = useCallback(() => {
         console.log('[WEBRTC] Cleaning up connection...');
@@ -196,13 +195,18 @@ export const useWebRTC = (userId: string, remoteIceServers?: any[]) => {
             if (pc.current && pc.current.remoteDescription && pc.current.signalingState !== 'closed') {
                 try {
                     const rtcCandidate = new RTCIceCandidate(candidate);
-                    console.log(`[WEBRTC] Adding Remote ICE: ${rtcCandidate.candidate.split(' ')[7] || 'relay'} (from: ${from || 'unknown'})`);
+                    const typeMatch = rtcCandidate.candidate.match(/typ\s+(\w+)/);
+                    const type = typeMatch ? typeMatch[1] : 'relay'; // relay is a safe fallback for remote
+                    console.log(`[WEBRTC] Adding Remote ICE: ${type} (from: ${from || 'unknown'})`);
                     await pc.current.addIceCandidate(rtcCandidate);
                 } catch (e) {
                     console.error('[WEBRTC] ICE Candidate add failed:', e);
                 }
             } else {
-                console.log(`[WEBRTC] Queueing Remote ICE (PC/RemoteDesc not ready) (from: ${from || 'unknown'})`);
+                const rtcCandidate = new RTCIceCandidate(candidate);
+                const typeMatch = rtcCandidate.candidate.match(/typ\s+(\w+)/);
+                const type = typeMatch ? typeMatch[1] : 'unknown';
+                console.log(`[WEBRTC] Queueing Remote ICE: ${type} (PC/RemoteDesc not ready) (from: ${from || 'unknown'})`);
                 iceCandidateQueue.current.push(candidate);
             }
         };
@@ -268,7 +272,7 @@ export const useWebRTC = (userId: string, remoteIceServers?: any[]) => {
             pc.current = null;
         }
 
-        console.log('[WEBRTC] Creating RTCPeerConnection...');
+        console.log('[WEBRTC] Creating RTCPeerConnection with:', configuration.iceServers.length, 'ICE servers');
         const _pc = new RTCPeerConnection(configuration) as any;
 
         if (stream) {
@@ -282,7 +286,11 @@ export const useWebRTC = (userId: string, remoteIceServers?: any[]) => {
 
         _pc.onicecandidate = (event: any) => {
             if (event.candidate) {
-                console.log(`[WEBRTC] Local ICE Gathered: ${event.candidate.candidate.split(' ')[7] || 'relay'} (userId: ${userIdRef.current})`);
+                // More robust way to identify candidate type
+                const cand = event.candidate.candidate;
+                const typeMatch = cand.match(/typ\s+(\w+)/);
+                const type = typeMatch ? typeMatch[1] : 'unknown';
+                console.log(`[WEBRTC] Local ICE Gathered: ${type} (userId: ${userIdRef.current})`);
                 socketService.getSocket()?.emit('ice-candidate', { to, candidate: event.candidate, from: userIdRef.current });
             } else {
                 console.log('[WEBRTC] ICE Gathering Complete');
@@ -323,7 +331,7 @@ export const useWebRTC = (userId: string, remoteIceServers?: any[]) => {
         }
 
         return _pc;
-    }, [socket, userId]);
+    }, [socket, userId, configuration]);
 
     const startCall = async (to: string, name: string) => {
         setPeerStatus('calling');

@@ -3,18 +3,22 @@ import * as env from '../config/env';
 
 export const getIceServers = async (req: Request, res: Response) => {
     try {
-        const iceServers = [
-            // STUN servers come first to encourage P2P discovery
-            { urls: 'stun:stun.net' },
+        const iceServers: any[] = [
+            // Comprehensive STUN server list for initial P2P discovery
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
             { urls: 'stun:stun2.l.google.com:19302' },
             { urls: 'stun:stun3.l.google.com:19302' },
-            { urls: 'stun:stun4.l.google.com:19302' }
+            { urls: 'stun:stun4.l.google.com:19302' },
+            { urls: 'stun:stun.nextcloud.com:443' },
+            { urls: 'stun:iphone-stun.strato-iphone.de:3478' }
         ];
 
-        // Add dynamic TURN server configuration from backend environment
+        // Add private TURN server configuration from environment
         if (env.TURN_SERVER_URL) {
+            console.log('[CONFIG_CONTROLLER] Providing private TURN server:', env.TURN_SERVER_URL);
+            
+            // Build TURN URL list (UDP + TCP)
             const turnUrls = [env.TURN_SERVER_URL];
             if (env.TURN_SERVER_URL_TCP) {
                 turnUrls.push(env.TURN_SERVER_URL_TCP);
@@ -22,17 +26,21 @@ export const getIceServers = async (req: Request, res: Response) => {
 
             iceServers.push({
                 urls: turnUrls,
-                username: env.TURN_USERNAME || '',
-                credential: env.TURN_CREDENTIAL || ''
-            } as any);
+                username: env.TURN_USERNAME,
+                credential: env.TURN_CREDENTIAL,
+                credentialType: 'password'
+            });
+        } else {
+            console.warn('[CONFIG_CONTROLLER] No primary TURN server configured in ENV.');
         }
 
-        // Add standard fallback public TURN server for broad compatibility
+        // Add standard free fallback TURN servers
         iceServers.push({
-            urls: ['turn:freestun.net:3478', 'turn:freestun.net:5349', 'turn:freestun.net:3478?transport=tcp'],
-            username: 'free',
-            credential: 'free'
-        } as any);
+            urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turn:openrelay.metered.ca:443?transport=tcp'],
+            username: 'openrelayproject',
+            credential: 'openrelayproject',
+            credentialType: 'password'
+        });
 
         res.json({ iceServers });
     } catch (err: any) {

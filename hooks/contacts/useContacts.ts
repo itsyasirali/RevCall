@@ -58,7 +58,6 @@ export const useContacts = () => {
 
     const getFilteredContacts = () => {
         return [
-            { _id: 'ai', name: 'AI Assistant', number: '10', type: 'ai' },
             ...(contacts || []).map(c => ({ ...c.contact, _id: c._id, contactId: c.contact?._id, type: 'contact' })),
             ...(directory || []).filter(u => !(contacts || []).some(c => c.contact?._id === u._id)).map(u => ({ ...u, type: 'directory' }))
         ].filter(item =>
