@@ -5,7 +5,6 @@ import { sessionConfig } from './config/session';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import callRoutes from './routes/callRoutes';
-import configRoutes from './routes/configRoutes';
 
 const app = express();
 
@@ -31,5 +30,4 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/calls', callRoutes);
-app.use('/api/config', configRoutes);
 export default app;

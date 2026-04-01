@@ -7,7 +7,7 @@ import InCallManager from 'react-native-incall-manager';
 import { PeerStatus } from '../../types';
 
 
-export const useWebRTC = (userId: string, remoteIceServers?: any[]) => {
+export const useWebRTC = (userId: string) => {
     // State
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
@@ -96,23 +96,28 @@ export const useWebRTC = (userId: string, remoteIceServers?: any[]) => {
         };
     }, [remoteStream]);
 
-    const configuration: any = useMemo(() => ({
-        iceServers: remoteIceServers && remoteIceServers.length > 0 ? remoteIceServers : [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' },
-            { urls: 'stun:stun3.l.google.com:19302' },
-            { urls: 'stun:stun4.l.google.com:19302' },
-            {
-                urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turn:openrelay.metered.ca:443?transport=tcp'],
-                username: 'openrelayproject',
-                credential: 'openrelayproject'
-            }
-        ],
-        iceTransportPolicy: 'all',
-        iceCandidatePoolSize: 10, // Pre-gathering 10 candidates reduces connection setup time
-        sdpSemantics: 'unified-plan'
-    }), [remoteIceServers]);
+    const configuration: any = useMemo(() => {
+        const config = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' },
+                {
+                    urls: ['turn:free.expressturn.com:3478', 'turn:free.expressturn.com:3478?transport=tcp'],
+                    username: '000000002086940175',
+                    credential: 'Ih02j2weeZCurrCXyuKeRI6PH2U=',
+                    credentialType: 'password'
+                }
+            ],
+            iceTransportPolicy: 'all' as any,
+            iceCandidatePoolSize: 10,
+            sdpSemantics: 'unified-plan' as any
+        };
+        console.log('[WEBRTC] Static ICE Configuration initialized');
+        return config;
+    }, []); // No dependencies, static config
 
     const cleanup = useCallback(() => {
         console.log('[WEBRTC] Cleaning up connection...');
@@ -290,11 +295,20 @@ export const useWebRTC = (userId: string, remoteIceServers?: any[]) => {
                 const cand = event.candidate.candidate;
                 const typeMatch = cand.match(/typ\s+(\w+)/);
                 const type = typeMatch ? typeMatch[1] : 'unknown';
-                console.log(`[WEBRTC] Local ICE Gathered: ${type} (userId: ${userIdRef.current})`);
+                console.log(`[WEBRTC] Local ICE Gathered: ${type} | Candidate: ${cand}`);
                 socketService.getSocket()?.emit('ice-candidate', { to, candidate: event.candidate, from: userIdRef.current });
             } else {
                 console.log('[WEBRTC] ICE Gathering Complete');
             }
+        };
+
+        _pc.onicecandidateerror = (event: any) => {
+            console.warn('[WEBRTC] ICE Candidate Error:', {
+                errorCode: event.errorCode,
+                errorText: event.errorText,
+                url: event.url,
+                hostCandidate: event.hostCandidate
+            });
         };
 
         _pc.ontrack = (event: any) => {
@@ -317,7 +331,10 @@ export const useWebRTC = (userId: string, remoteIceServers?: any[]) => {
         };
 
         _pc.onconnectionstatechange = () => {
-            console.log('[WEBRTC] PC State:', _pc.connectionState);
+            console.log('[WEBRTC] PC State Changed:', _pc.connectionState);
+            if (_pc.connectionState === 'failed') {
+                console.warn('[WEBRTC] Connection failed! This usually indicates TURN server issues or firewall blocking.');
+            }
             setConnectionState(_pc.connectionState);
         };
 

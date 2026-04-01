@@ -27,7 +27,6 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [isCallingFullScreen, setIsCallingFullScreen] = useState(false);
     const [activeCall, setActiveCall] = useState<ActiveCallData | null>(null);
     const [isIosMuted, setIsIosMuted] = useState(false);
-    const [iceServers, setIceServers] = useState<any[]>([]);
     const soundRef = useRef<Audio.Sound | null>(null);
     const isAcceptedRef = useRef(false);
     const startTimeRef = useRef<Date | null>(null);
@@ -48,28 +47,8 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const identifier = user?.number || user?._id || user?.id || '';
 
-    // Fetch dynamic ICE servers from backend to prioritize P2P paths
-    useEffect(() => {
-        const fetchIceServers = async () => {
-            if (!user) return;
-            try {
-                console.log('[CALL_CONTEXT] Fetching optimized ICE servers from backend...');
-                const res = await axios.get('/api/config/ice-servers');
-                if (res.data && res.data.iceServers) {
-                    console.log('[CALL_CONTEXT] ICE servers (STUN+TURN) loaded successfully');
-                    setIceServers(res.data.iceServers);
-                }
-            } catch (err) {
-                console.error('[CALL_CONTEXT] Failed to fetch optimized ICE servers:', err);
-                // Fallback will be handled inside useWebRTC hook
-            }
-        };
-
-        fetchIceServers();
-    }, [user]);
-
     // Use WebRTC hook at the component level to persist state
-    const webrtc = useWebRTC(identifier, iceServers);
+    const webrtc = useWebRTC(identifier);
 
     const logCall = async (data: {
         otherNumber: string,
