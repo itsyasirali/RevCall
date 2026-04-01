@@ -34,15 +34,16 @@ export const useWebRTC = (userId: string) => {
     const ensureAudioSession = useCallback(async (speaker: boolean = isSpeaker) => {
         try {
             console.log('[WEBRTC] Hardening Audio Session. Speaker:', speaker);
+            // Global Audio Configuration for WebRTC
             await Audio.setAudioModeAsync({
                 allowsRecordingIOS: true,
                 playsInSilentModeIOS: true,
-                shouldDuckAndroid: true,
-                playThroughEarpieceAndroid: !speaker, // true = Earpiece, false = Speaker
                 staysActiveInBackground: true,
+                shouldDuckAndroid: true,
                 interruptionModeIOS: InterruptionModeIOS.DoNotMix,
                 interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
             });
+            console.log('[WEBRTC] Audio session configured for media flow');
             console.log('[WEBRTC] Audio Session Hardened Successfully');
         } catch (e) {
             console.error('[WEBRTC] Audio session hardening failed:', e);
@@ -63,16 +64,19 @@ export const useWebRTC = (userId: string) => {
     // Track state monitor
     useEffect(() => {
         if (remoteStream) {
-            console.log('[WEBRTC] Remote stream tracks initialized:', remoteStream.getTracks().length);
             remoteStream.getTracks().forEach(track => {
-                console.log(`[WEBRTC] Remote Track: ${track.kind} | State: ${track.readyState} | Enabled: ${track.enabled}`);
+                console.log(`[WEBRTC] Remote Track detected: ${track.kind} | State: ${track.readyState} | Enabled: ${track.enabled}`);
                 track.enabled = true;
+                
+                // Polyfills for different library versions to ensure audio flow
                 // @ts-ignore
-                if (track._muted) track._muted = false;
-                // Force un-mute if using newer library versions
+                if (track._muted === true) track._muted = false;
                 // @ts-ignore
-                if (track.setMuted) track.setMuted(false);
+                if (typeof track.setMuted === 'function') track.setMuted(false);
             });
+
+            // Re-ensure audio mode is correct when remote stream arrives
+            ensureAudioSession();
 
             // Start stats monitoring to verify packet flow
             if (pc.current && !statsInterval.current) {
@@ -100,14 +104,23 @@ export const useWebRTC = (userId: string) => {
         const config = {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' },
-                { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' },
+                { urls: 'stun:free.expressturn.com:3478' },
                 {
-                    urls: ['turn:free.expressturn.com:3478', 'turn:free.expressturn.com:3478?transport=tcp'],
-                    username: '000000002086940175',
-                    credential: 'Ih02j2weeZCurrCXyuKeRI6PH2U=',
+                    urls: 'turn:free.expressturn.com:3478',
+                    username: '000000002090383512',
+                    credential: 'oj/bsXvbLVmXNFGsGN1Hs+5ktNc=',
+                    credentialType: 'password'
+                },
+                {
+                    urls: 'turn:free.expressturn.com:3478?transport=tcp',
+                    username: '000000002090383512',
+                    credential: 'oj/bsXvbLVmXNFGsGN1Hs+5ktNc=',
+                    credentialType: 'password'
+                },
+                {
+                    urls: 'turns:free.expressturn.com:443?transport=tcp',
+                    username: '000000002090383512',
+                    credential: 'oj/bsXvbLVmXNFGsGN1Hs+5ktNc=',
                     credentialType: 'password'
                 }
             ],
@@ -115,7 +128,8 @@ export const useWebRTC = (userId: string) => {
             iceCandidatePoolSize: 10,
             sdpSemantics: 'unified-plan' as any
         };
-        console.log('[WEBRTC] Static ICE Configuration initialized');
+        console.log('[WEBRTC] Final ICE Servers Count:', config.iceServers.length);
+        console.log('[WEBRTC] TURN User being used:', process.env.EXPO_PUBLIC_TURN_USERNAME || '000000002090383512');
         return config;
     }, []); // No dependencies, static config
 
@@ -303,12 +317,16 @@ export const useWebRTC = (userId: string) => {
         };
 
         _pc.onicecandidateerror = (event: any) => {
-            console.warn('[WEBRTC] ICE Candidate Error:', {
+            console.warn('[WEBRTC] !!! ICE Candidate Error !!!', {
                 errorCode: event.errorCode,
                 errorText: event.errorText,
                 url: event.url,
-                hostCandidate: event.hostCandidate
+                address: event.address,
+                port: event.port
             });
+            if (event.errorCode === 401) {
+                console.error('[WEBRTC] Authentication Failed for TURN server. Check credentials!');
+            }
         };
 
         _pc.ontrack = (event: any) => {
@@ -327,7 +345,14 @@ export const useWebRTC = (userId: string) => {
         };
 
         _pc.oniceconnectionstatechange = () => {
-            console.log('[WEBRTC] ICE State:', _pc.iceConnectionState);
+            console.log('[WEBRTC] ICE State Changed:', _pc.iceConnectionState);
+        };
+
+        _pc.onicegatheringstatechange = () => {
+            console.log('[WEBRTC] ICE Gathering State:', _pc.iceGatheringState);
+            if (_pc.iceGatheringState === 'complete') {
+                console.log('[WEBRTC] ICE Gathering Finished completely.');
+            }
         };
 
         _pc.onconnectionstatechange = () => {
