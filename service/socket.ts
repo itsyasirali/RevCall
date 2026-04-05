@@ -21,12 +21,12 @@ class SocketService {
         if (!this.socket) {
             console.log('Initializing Global Socket connection to:', SIGNAL_SERVER);
             const _socket = io(SIGNAL_SERVER, {
-                transports: ['websocket', 'polling'], // Allow polling fallback for tunnel stability
+                transports: ['websocket', 'polling'],
                 reconnectionAttempts: 10,
-                timeout: 20000, // Increased timeout for slow tunnel handshakes
+                timeout: 20000,
                 autoConnect: true,
                 forceNew: true,
-                withCredentials: true // Crucial for session-based auth
+                withCredentials: true
             });
 
             _socket.on('connect', () => {
@@ -38,7 +38,6 @@ class SocketService {
             });
 
             _socket.on('ice-candidate', ({ candidate, from }: any) => {
-                // If it's from someone else, buffer it
                 if (from && from !== this.currentUserId) {
                     console.log(`[SOCKET_SERVICE] Buffering ICE candidate from ${from}`);
                     if (!this.candidateBuffer[from]) this.candidateBuffer[from] = [];
@@ -101,7 +100,6 @@ export const useSocket = () => {
 
     useEffect(() => {
         const unsubscribe = socketService.subscribe((s) => setSocket(s));
-        // Check current status in case it changed between initialization and subscription
         const current = socketService.getSocket();
         if (current !== socket) setSocket(current);
 
