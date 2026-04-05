@@ -17,7 +17,6 @@ export const signup = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        // Generate a unique 3-digit number for the user (100-999)
         let number = '';
         let isUnique = false;
         while (!isUnique) {
