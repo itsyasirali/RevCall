@@ -25,7 +25,6 @@ export const useWebRTC = (userId: string) => {
     const statsInterval = useRef<any>(null);
     const userIdRef = useRef(userId);
 
-    // Sync userId to ref to avoid stale closures in callbacks
     useEffect(() => {
         userIdRef.current = userId;
     }, [userId]);
@@ -50,7 +49,6 @@ export const useWebRTC = (userId: string) => {
         }
     }, [isSpeaker]);
 
-    // Re-initialization guard for audio
     useEffect(() => {
         if ((peerStatus === 'connected' || connectionState === 'connected') && !hasInitializedAudio.current) {
             hasInitializedAudio.current = true;
