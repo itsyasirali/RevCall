@@ -13,7 +13,6 @@ export const signup = async (req: Request, res: Response) => {
 
         let user = await User.findOne({ email });
         if (user) {
-            console.log('[AUTH] Signup failed: User already exists:', email);
             return res.status(400).json({ message: 'User already exists' });
         }
 
@@ -37,7 +36,6 @@ export const signup = async (req: Request, res: Response) => {
 
         await user.save();
 
-        console.log('[AUTH] Signup successful for:', email, 'Number:', number);
 
         (req.session as any).user = {
             id: user.id
@@ -45,7 +43,6 @@ export const signup = async (req: Request, res: Response) => {
 
         res.json({ user: { id: user.id, name, email, number } });
     } catch (err: any) {
-        console.error('[AUTH] Signup Error:', err);
         res.status(500).send('Server error');
     }
 };
@@ -59,11 +56,9 @@ export const login = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Email and password are required' });
         }
 
-        console.log('[AUTH] Login attempt for:', email);
 
         const user = await User.findOne({ email });
         if (!user) {
-            console.log('[AUTH] Login failed: User not found:', email);
             return res.status(400).json({ message: 'Invalid Credentials' });
         }
 
@@ -87,7 +82,6 @@ export const login = async (req: Request, res: Response) => {
             }
         });
     } catch (err: any) {
-        console.error('[AUTH] Login Error:', err);
         res.status(500).send('Server error');
     }
 };

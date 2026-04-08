@@ -66,17 +66,14 @@ export const useWebRTC = (userId: string) => {
                 console.log(`[WEBRTC] Remote Track detected: ${track.kind} | State: ${track.readyState} | Enabled: ${track.enabled}`);
                 track.enabled = true;
                 
-                // Polyfills for different library versions to ensure audio flow
                 // @ts-ignore
                 if (track._muted === true) track._muted = false;
                 // @ts-ignore
                 if (typeof track.setMuted === 'function') track.setMuted(false);
             });
 
-            // Re-ensure audio mode is correct when remote stream arrives
             ensureAudioSession();
 
-            // Start stats monitoring to verify packet flow
             if (pc.current && !statsInterval.current) {
                 statsInterval.current = setInterval(async () => {
                     try {
