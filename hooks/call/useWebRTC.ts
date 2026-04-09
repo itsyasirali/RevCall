@@ -106,18 +106,6 @@ export const useWebRTC = (userId: string) => {
                     credential: 'oj/bsXvbLVmXNFGsGN1Hs+5ktNc=',
                     credentialType: 'password'
                 },
-                {
-                    urls: 'turn:free.expressturn.com:3478?transport=tcp',
-                    username: '000000002090383512',
-                    credential: 'oj/bsXvbLVmXNFGsGN1Hs+5ktNc=',
-                    credentialType: 'password'
-                },
-                {
-                    urls: 'turns:free.expressturn.com:443?transport=tcp',
-                    username: '000000002090383512',
-                    credential: 'oj/bsXvbLVmXNFGsGN1Hs+5ktNc=',
-                    credentialType: 'password'
-                }
             ],
             iceTransportPolicy: 'all' as any,
             iceCandidatePoolSize: 10,
